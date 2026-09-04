@@ -67,19 +67,29 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
   that where it applies, since gluten-free is independent of the other three (a
   dish can be both Vegan and GF, say). Filter the grid with the checkboxes in the
   header; the GF checkbox narrows whatever's already showing down to gluten-free
-  meals only, rather than being another either/or category. GF tags reflect the
-  packaged ingredients' manufacturer-published ingredient lists at the time each
-  recipe was written — formulations can change, so verify current packaging if
-  this matters for an actual dietary restriction.
+  meals only, rather than being another either/or category. GF tags (and the
+  vegetarian rennet source behind the **V** tag, for cheese ingredients) reflect
+  the packaged ingredients' manufacturer-published ingredient lists at the time
+  each recipe was written — formulations can change, so verify current
+  packaging if this matters for an actual dietary restriction.
 - Each card's ribbon (directly under the meal image) holds the "add to cart"
   checkbox, category/GF badges, date, meal name and serving count. Clicking
-  anywhere on the ribbon toggles that card's selection, same as clicking the
-  checkbox directly — either one selects or deselects it.
+  anywhere on the card toggles its selection, same as clicking the checkbox
+  directly — except the "Recipe & image ›" button, which keeps its own
+  distinct action instead.
 - Every ingredient is looked up live against Supabase: size, price, and — when
   the item is genuinely discounted — the price is shown in green with a `(% off)`
   badge. Brand names sit under the ingredient name; items with no brand (fresh
   produce) just show the ingredient. If an ingredient isn't on special at the
-  chosen store this week, the card says so instead of guessing.
+  chosen store this week, the card says so instead of guessing. On a mouse
+  (not touch), hovering an ingredient row highlights it.
+- `dbPromotionalIngredients` only ever holds items *currently* on a genuine
+  promotional deal, never a full catalogue — so every recipe ingredient is
+  chosen to be something realistically promotable, not just a plausible
+  product name. **Tomato & Choy Sum Pasta** and **Tuna & Capsicum Pasta
+  Bake** are built around a boxed pasta-and-sauce product rather than
+  separate dry pasta + jar sauce, since no dry pasta of any shape or brand
+  was on special anywhere when these were last reviewed against live data.
 - **Common pantry staples** (salt, pepper, oil, etc.) are listed separately on each
   card and are not added to the shopping cart or its total, since you're assumed to
   already have them.

@@ -1,0 +1,3 @@
+Check the generated meal plans for ingredients which are not in dbPromotionalIngredients, showing no price (not on special). All meal plan's ingredients must be sourced from this table only.
+Clicking anywhere in the card will trigger card selection/deselection.
+If using a mouse, hovering over an ingredient will highlight the row.

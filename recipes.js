@@ -1,6 +1,10 @@
 // The weekly meal plan. Each recipe's ingredients reference the EXACT
-// "product" string found in the CSV dumps (see /datadump) so the app can
-// look up live size/price/special info from data.js at render time.
+// "Product" string as scraped live into Supabase's dbPromotionalIngredients
+// table (see supabase-client.js) so the app can look up live size/price/
+// special info at render time. Since that table only ever holds items
+// currently on a genuine promotional deal (never a full catalogue), an
+// ingredient here can go from resolvable to "not on special" — or vice
+// versa — as real promotions rotate week to week.
 //
 // category: "V" (vegetarian), "NV" (non-vegetarian), "VG" (vegan)
 // glutenFree: true if the recipe's packaged ingredients are gluten-free per
@@ -47,48 +51,50 @@ window.MEAL_PLANS = [
     gradient: ['#f7971e', '#ffd200'],
     ingredients: [
       { generic: 'Coconut curry vegetable sauce', brand: 'Lee Kum Kee', match: "Lee Kum Kee Ready Sauce For Coconut Curry Vegetables", qty: 1 },
-      { generic: 'Chickpeas, canned', brand: 'Ceres Organics', match: 'Ceres Organics Organic Chickpeas Garbanzo Beans', qty: 1 },
+      { generic: 'Chickpeas, canned', brand: 'Chantal Organics', match: 'Chantal Organics Organic Chickpeas', qty: 1 },
       { generic: 'Pumpkin', brand: '', match: 'Crown Pumpkin', qty: 1 },
-      { generic: 'Baby spinach', brand: 'Pams', match: 'Pams Baby Spinach', qty: 1 },
-      { generic: 'Jasmine rice', brand: 'Pams', match: 'Pams Jasmine Rice', qty: 1 },
+      { generic: 'Choy sum', brand: '', match: 'Choy Sum', qty: 1 },
+      { generic: 'Jasmine rice microwave pouch', brand: "Ben's Original", match: "Ben's Original Jasmine Rice Microwave Pouch", qty: 2 },
     ],
     pantry: ['Salt', 'Pepper', 'Cooking oil', 'Garlic', 'Onion'],
     instructions: [
       'Peel the pumpkin and cut into 2cm cubes. Rinse and drain the chickpeas.',
-      'Cook the jasmine rice according to pack directions.',
+      'Cook the jasmine rice pouches according to the pack instructions.',
       'Heat oil in a large pot, soften a diced onion and a crushed garlic clove for 2–3 minutes.',
       'Add the pumpkin, chickpeas and coconut curry vegetable sauce, plus a splash of water. Cover and simmer 12–15 minutes until the pumpkin is tender.',
-      'Stir through the baby spinach until just wilted, season to taste, and serve over the rice.',
+      'Roughly chop the choy sum and stir through until just wilted, season to taste, and serve over the rice.',
     ],
   },
   {
     id: 'r3',
     dayOffset: 2,
-    name: 'Tomato, Spinach & Mozzarella Pasta',
+    name: 'Tomato & Choy Sum Pasta',
     category: 'V',
     servings: 4,
     emoji: '🍝',
     gradient: ['#56ab2f', '#a8e063'],
+    // No dry pasta of any shape/brand was on special at any store when
+    // this was written, so this is built around a boxed pasta-and-sauce
+    // product instead of separately-bought dry pasta + jar sauce.
     ingredients: [
-      { generic: 'Spaghetti pasta', brand: 'Diamond', match: 'Diamond Spaghetti Pasta', qty: 1 },
-      { generic: 'Tomato & herb pasta sauce', brand: "Wattie's", match: "Wattie's Tomato & Herb Pasta Sauce", qty: 1 },
-      { generic: 'Whole peeled tomatoes, canned', brand: 'Ceres Organics', match: 'Ceres Organics Organic Whole Peeled Tomatoes', qty: 1 },
-      { generic: 'Baby spinach', brand: 'Pams', match: 'Pams Baby Spinach', qty: 1 },
-      { generic: 'Mozzarella, grated', brand: 'Dairyworks', match: 'Dairyworks Mozzarella Grated Cheese', qty: 1 },
+      { generic: 'Tomato pasta & sauce', brand: 'Continental', match: 'Continental Tomato Pasta & Sauce', qty: 2 },
+      { generic: 'Italian-style tomatoes, canned', brand: "Wattie's", match: "Wattie's Italian Style Tomatoes", qty: 1 },
+      { generic: 'Choy sum', brand: '', match: 'Choy Sum', qty: 1 },
+      { generic: 'Cheddar cheese, sliced', brand: 'Emborg', match: 'Emborg Red Cheddar Natural Slices Cheese', qty: 1 },
     ],
     pantry: ['Salt', 'Pepper', 'Olive oil', 'Garlic', 'Sugar (pinch)'],
     instructions: [
-      'Bring a large pot of salted water to the boil and cook the spaghetti until al dente.',
-      'Meanwhile, warm the pasta sauce and canned tomatoes together in a saucepan, breaking up the tomatoes with a spoon.',
-      'Add a crushed garlic clove and a small pinch of sugar to round out the acidity; simmer gently for 8 minutes.',
-      'Stir the baby spinach through the sauce until wilted, then toss with the drained spaghetti.',
-      'Plate up and finish with a generous scatter of grated mozzarella and cracked pepper.',
+      'Cook the pasta & sauce packets according to the box instructions.',
+      'Meanwhile, warm the Italian-style tomatoes in a small saucepan, breaking them up with a spoon, with a crushed garlic clove and a small pinch of sugar to round out the acidity.',
+      'Roughly chop the choy sum.',
+      'Stir the warmed tomatoes and choy sum through the cooked pasta until the greens are just wilted.',
+      'Plate up and finish with a scatter of torn cheddar and cracked pepper.',
     ],
   },
   {
     id: 'r4',
     dayOffset: 3,
-    name: 'Cantonese Chicken & Bok Choy Stir-fry',
+    name: 'Cantonese Chicken & Choy Sum Stir-fry',
     category: 'NV',
     glutenFree: true,
     servings: 4,
@@ -97,14 +103,14 @@ window.MEAL_PLANS = [
     ingredients: [
       { generic: 'Cooked chicken breast pieces', brand: 'Chop Chop', match: 'Chop Chop Springwater Pieces Of Cooked Chicken Breast', qty: 2 },
       { generic: 'Cantonese chicken stir-fry sauce', brand: 'Lee Kum Kee', match: 'Lee Kum Kee Ready Sauce For Cantonese Chicken', qty: 1 },
-      { generic: 'Bok choy', brand: '', match: 'Shanghai Bok Choy', qty: 2 },
+      { generic: 'Choy sum', brand: '', match: 'Choy Sum', qty: 2 },
       { generic: 'Savoury chicken rice pouch', brand: "Ben's Original", match: "Ben's Original Savoury Chicken Flavour Rice Microwave Pouch", qty: 2 },
     ],
     pantry: ['Salt', 'Pepper', 'Cooking oil', 'Garlic', 'Sesame oil'],
     instructions: [
       'Cook the rice pouches according to pack instructions.',
-      'Halve the bok choy lengthways and rinse well.',
-      'Heat oil in a wok over high heat and sear the bok choy cut-side down for 1–2 minutes until lightly charred.',
+      'Trim the choy sum stems and rinse well, cutting into thirds.',
+      'Heat oil in a wok over high heat and stir-fry the choy sum for 1–2 minutes until just wilted.',
       'Add the cooked chicken pieces and the Cantonese stir-fry sauce, tossing to coat and heating through for 2–3 minutes.',
       'Finish with a few drops of sesame oil and serve over the warm rice.',
     ],
@@ -119,14 +125,13 @@ window.MEAL_PLANS = [
     gradient: ['#c31432', '#240b36'],
     ingredients: [
       { generic: 'Mild chilli beans, canned', brand: "Wattie's", match: "Wattie's Mild Chilli Beans", qty: 2 },
-      { generic: 'Black beans, canned', brand: 'Ceres Organics', match: 'Ceres Organics Organic Black Beans', qty: 1 },
+      { generic: 'Black beans, canned', brand: 'Chantal Organics', match: 'Chantal Organics Organic Black Beans', qty: 1 },
       { generic: 'Capsicum, red', brand: '', match: 'Red Capsicum', qty: 1 },
-      { generic: 'Red onions', brand: 'Pams', match: 'Pams Red Onions', qty: 1 },
-      { generic: 'Jasmine rice', brand: 'Pams', match: 'Pams Jasmine Rice', qty: 1 },
+      { generic: 'Jasmine rice microwave pouch', brand: "Ben's Original", match: "Ben's Original Jasmine Rice Microwave Pouch", qty: 2 },
     ],
-    pantry: ['Salt', 'Pepper', 'Cumin', 'Chilli powder', 'Cooking oil'],
+    pantry: ['Salt', 'Pepper', 'Cumin', 'Chilli powder', 'Cooking oil', 'Onion'],
     instructions: [
-      'Cook the jasmine rice according to pack directions.',
+      'Cook the jasmine rice pouches according to the pack instructions.',
       'Dice the red onion and red capsicum. Rinse and drain the black beans.',
       'Heat oil in a pot and soften the onion and capsicum for 3–4 minutes with a pinch of cumin and chilli powder.',
       'Stir in the chilli beans and black beans (undrained), then simmer uncovered for 12–15 minutes, stirring occasionally, until thickened.',
@@ -141,19 +146,21 @@ window.MEAL_PLANS = [
     servings: 4,
     emoji: '🐟',
     gradient: ['#2193b0', '#6dd5ed'],
+    // No dry pasta of any shape/brand was on special at any store when
+    // this was written, so this is built around a boxed pasta-and-sauce
+    // product instead of separately-bought dry pasta + jar sauce.
     ingredients: [
-      { generic: 'Penne pasta', brand: 'Diamond', match: 'Diamond Penne Pasta', qty: 1 },
+      { generic: 'Tomato pasta & sauce', brand: 'Continental', match: 'Continental Tomato Pasta & Sauce', qty: 2 },
       { generic: 'Tuna in spring water', brand: 'Sealord', match: 'Sealord Chunky Style Tuna In Spring Water', qty: 2 },
-      { generic: 'Original pasta sauce', brand: "Wattie's", match: "Wattie's Original Pasta Sauce", qty: 1 },
-      { generic: 'Tasty cheese, grated', brand: 'Dairyworks', match: 'Dairyworks Tasty Grated Cheese', qty: 1 },
+      { generic: 'Cheddar cheese, sliced', brand: 'Emborg', match: 'Emborg Red Cheddar Natural Slices Cheese', qty: 1 },
       { generic: 'Capsicum, green', brand: '', match: 'Green Capsicum', qty: 1 },
     ],
     pantry: ['Salt', 'Pepper', 'Olive oil', 'Garlic'],
     instructions: [
-      'Preheat the oven to 200°C and cook the penne until just al dente, then drain.',
+      'Preheat the oven to 200°C and cook the pasta & sauce packets according to the box instructions.',
       'Dice the green capsicum and flake the drained tuna.',
-      'Mix the pasta, capsicum, tuna and pasta sauce together in a baking dish, seasoning with salt, pepper and a crushed garlic clove.',
-      'Scatter the grated tasty cheese evenly over the top.',
+      'Mix the cooked pasta, capsicum and tuna together in a baking dish, seasoning with salt, pepper and a crushed garlic clove.',
+      'Scatter the torn cheddar evenly over the top.',
       'Bake for 15–18 minutes until bubbling and golden, then rest 5 minutes before serving.',
     ],
   },
@@ -168,10 +175,10 @@ window.MEAL_PLANS = [
     gradient: ['#11998e', '#38ef7d'],
     ingredients: [
       { generic: 'Cauliflower', brand: '', match: 'Cauliflower', qty: 1 },
-      { generic: 'Pumpkin', brand: '', match: 'Squash Pumpkin', qty: 1 },
+      { generic: 'Pumpkin', brand: '', match: 'Crown Pumpkin', qty: 1 },
       { generic: 'Capsicum, red', brand: '', match: 'Red Capsicum', qty: 1 },
-      { generic: 'Chickpeas, canned', brand: 'Ceres Organics', match: 'Ceres Organics Organic Chickpeas Garbanzo Beans', qty: 1 },
-      { generic: 'Mozzarella, grated', brand: 'Dairyworks', match: 'Dairyworks Mozzarella Grated Cheese', qty: 1 },
+      { generic: 'Chickpeas, canned', brand: 'Chantal Organics', match: 'Chantal Organics Organic Chickpeas', qty: 1 },
+      { generic: 'Cheddar cheese, sliced', brand: 'Emborg', match: 'Emborg Red Cheddar Natural Slices Cheese', qty: 1 },
     ],
     pantry: ['Salt', 'Pepper', 'Olive oil', 'Balsamic vinegar', 'Garlic'],
     instructions: [
@@ -179,7 +186,7 @@ window.MEAL_PLANS = [
       'Toss the cauliflower, pumpkin and sliced red capsicum in olive oil, salt and pepper.',
       'Roast for 25–30 minutes, turning once, until caramelised and tender.',
       'Rinse and drain the chickpeas, then toss through the warm roasted vegetables.',
-      'Finish with a drizzle of olive oil and balsamic vinegar and a generous scatter of grated mozzarella.',
+      'Finish with a drizzle of olive oil and balsamic vinegar and a scatter of torn cheddar.',
     ],
   },
 ];
