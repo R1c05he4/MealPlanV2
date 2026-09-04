@@ -85,11 +85,15 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
   (not touch), hovering an ingredient row highlights it.
 - `dbPromotionalIngredients` only ever holds items *currently* on a genuine
   promotional deal, never a full catalogue — so every recipe ingredient is
-  chosen to be something realistically promotable, not just a plausible
-  product name. **Tomato & Choy Sum Pasta** and **Tuna & Capsicum Pasta
-  Bake** are built around a boxed pasta-and-sauce product rather than
-  separate dry pasta + jar sauce, since no dry pasta of any shape or brand
-  was on special anywhere when these were last reviewed against live data.
+  chosen to be something realistically promotable at that specific store,
+  not just a plausible product name. This is also why **each store has its
+  own independently-curated 7 recipes** (`recipes.js`,
+  `window.MEAL_PLANS_BY_STORE`) rather than one fixed list applied
+  everywhere: what substitutes for e.g. dry pasta or a leafy green
+  genuinely differs store to store (a boxed pasta-and-sauce product at one,
+  gnocchi + a jarred sauce at another), so the same nominal dish can use
+  different real ingredients — and even a different name — depending which
+  store you picked.
 - **Common pantry staples** (salt, pepper, oil, etc.) are listed separately on each
   card and are not added to the shopping cart or its total, since you're assumed to
   already have them.
@@ -122,7 +126,7 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
 |---|---|
 | `index.html` / `styles.css` / `app.js` | The app itself |
 | `supabase-client.js` | Fetches specials live from Supabase (`dbPromotionalIngredients` + `tStores`) |
-| `recipes.js` | The 7 meal definitions — ingredients reference exact product names as scraped |
+| `recipes.js` | 7 meal definitions per store — each store's list is independently curated so every ingredient resolves against that store's own specials |
 | `tools/build-data.js` | *(legacy)* CSV → `data.js` converter, no longer used by the app |
 | `data.js` | *(legacy)* Generated — no longer loaded by `index.html` |
 | `datadump/*.csv` | *(legacy)* Source specials data, superseded by the Supabase tables |

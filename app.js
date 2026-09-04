@@ -45,6 +45,18 @@
     return '$' + (Math.round(n * 100) / 100).toFixed(2);
   }
 
+  // Each store has its own independently-curated recipe list (see
+  // recipes.js), since a fixed set of exact product names can't resolve
+  // against every store's different weekly promotions. Falls back to the
+  // first curated store's list for a store the scraper has added that
+  // hasn't been reviewed yet, rather than showing nothing.
+  function currentMealPlans() {
+    const byStore = window.MEAL_PLANS_BY_STORE || {};
+    if (state.storeFilter && byStore[state.storeFilter]) return byStore[state.storeFilter];
+    const fallbackKey = Object.keys(byStore)[0];
+    return fallbackKey ? byStore[fallbackKey] : [];
+  }
+
   // ---------- Ingredient resolution ----------
   // Special ingredients are strictly limited to the store the user chose in the
   // store prompt — no cross-store fallback. If the item isn't on special at that
@@ -180,7 +192,7 @@
 
   function renderCards() {
     cardGrid.innerHTML = '';
-    for (const recipe of window.MEAL_PLANS) {
+    for (const recipe of currentMealPlans()) {
       if (!state.activeCategories.has(recipe.category)) continue;
       if (state.gfOnly && !recipe.glutenFree) continue;
       cardGrid.appendChild(buildCard(recipe));
@@ -303,7 +315,7 @@
     // key -> { generic, brand, match, qty, uses: [{recipeName,date}], line info }
     const map = new Map();
     const pantrySet = new Set();
-    for (const recipe of window.MEAL_PLANS) {
+    for (const recipe of currentMealPlans()) {
       if (!state.selectedMeals.has(recipe.id)) continue;
       const date = new Date(dumpDate);
       date.setDate(date.getDate() + recipe.dayOffset);
@@ -447,7 +459,7 @@
 
   // ---------- PDF / print generation ----------
   function generateInstructionsPdf() {
-    const selected = window.MEAL_PLANS.filter(r => state.selectedMeals.has(r.id));
+    const selected = currentMealPlans().filter(r => state.selectedMeals.has(r.id));
     if (!selected.length) return;
 
     const sections = selected.map(recipe => {
@@ -545,7 +557,7 @@
   }
 
   function buildWeeklyPlanDocument(store, filename) {
-    const included = window.MEAL_PLANS.filter(r => state.activeCategories.has(r.category));
+    const included = currentMealPlans().filter(r => state.activeCategories.has(r.category));
     let grandTotal = 0, grandSaving = 0;
     const sections = included.map(recipe => {
       const lines = computeRecipeLines(recipe, store);
