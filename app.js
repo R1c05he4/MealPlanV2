@@ -273,6 +273,9 @@
       return row;
     }
     const priceClass = line.onSpecial ? 'ingredient-row__price is-special' : 'ingredient-row__price';
+    // Native tooltip on hover, referencing the live Supabase row this price
+    // came from (dbPromotionalIngredients.PromotionalIngredientID).
+    row.title = 'PromotionalIngredientID: ' + line.row.id;
     row.innerHTML = `
       <div class="ingredient-row__name">
         ${line.generic} ${line.qty > 1 ? '×' + line.qty : ''}

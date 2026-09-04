@@ -82,6 +82,7 @@ window.SUPABASE_CONFIG = {
         if (!prevForStore || r.scraped_at > prevForStore) latestScrapedAtByStore.set(storeName, r.scraped_at);
       }
       return {
+        id: r.PromotionalIngredientID,
         store: storeName,
         product: r.Product,
         size: r['Size/Weight'] || '',

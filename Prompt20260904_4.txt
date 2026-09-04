@@ -1,0 +1,1 @@
+When hovering over an ingredients on the generated plan, please show the PromotionalIngredientsID as a tooltip, to be used for referencing the table row.
