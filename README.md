@@ -1,7 +1,7 @@
 # Weekly Meal Planner
 
-A screen-adaptive web app that builds a weekly meal plan from the discounted/special
-ingredients dumped into `/datadump` (PAK'nSAVE Mt Albert & Westgate specials).
+A screen-adaptive web app that builds a weekly meal plan from discounted/special
+PAK'nSAVE ingredients, scraped live into Supabase (see "Updating the specials" below).
 
 ## Running it
 
@@ -29,11 +29,10 @@ refresh them. An external scraper writes rows into two tables in the
 
 `supabase-client.js` fetches both tables (paginated, 1000 rows/request) using
 the project's **publishable** (`sb_publishable_...`) key and reshapes them
-into the same `{ generatedFrom, dumpDate, rows }` structure `data.js` used to
-provide, so the rest of the app didn't need to change. This runs on page
-load, and again whenever you click **"Check for new store data"** — which,
-unlike the old data.js version, works from a plain `file://` page too, since
-it's a cross-origin fetch to Supabase rather than a same-origin file read.
+into the same `{ generatedFrom, dumpDate, storeScrapedAt, rows }` structure
+`data.js` used to provide, so the rest of the app didn't need to change. This
+runs once, on page load; there's no live-refresh button — use **"Back To
+Stores"** (which reloads the page) to re-fetch and re-pick a store.
 
 The publishable key is safe to ship in client code — it only works because
 Row Level Security on both tables grants public, read-only `SELECT`. Never
@@ -59,14 +58,24 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
 ## What it does
 
 - **Store prompt on load**: the app asks which store you're shopping at before
-  showing anything. Every price and special shown afterwards is limited strictly to
-  that store — no cross-store fallback. You can still switch stores any time from
-  the header dropdown.
+  showing anything, listing every store the scraper currently has data for.
+  Every price and special shown afterwards is limited strictly to that store
+  — no cross-store fallback, and no way to switch stores without going back
+  through this prompt.
 - **7-day meal plan**, one card per day, each tagged **V** (vegetarian), **NV**
-  (non-vegetarian) or **VG** (vegan). Filter the grid with the checkboxes in the header.
+  (non-vegetarian) or **VG** (vegan) — plus a **GF** (gluten-free) badge on top of
+  that where it applies, since gluten-free is independent of the other three (a
+  dish can be both Vegan and GF, say). Filter the grid with the checkboxes in the
+  header; the GF checkbox narrows whatever's already showing down to gluten-free
+  meals only, rather than being another either/or category. GF tags reflect the
+  packaged ingredients' manufacturer-published ingredient lists at the time each
+  recipe was written — formulations can change, so verify current packaging if
+  this matters for an actual dietary restriction.
 - Each card's ribbon (directly under the meal image) holds the "add to cart"
-  checkbox, category badge, date, meal name and serving count.
-- Every ingredient is looked up live against the CSV data: size, price, and — when
+  checkbox, category/GF badges, date, meal name and serving count. Clicking
+  anywhere on the ribbon toggles that card's selection, same as clicking the
+  checkbox directly — either one selects or deselects it.
+- Every ingredient is looked up live against Supabase: size, price, and — when
   the item is genuinely discounted — the price is shown in green with a `(% off)`
   badge. Brand names sit under the ingredient name; items with no brand (fresh
   produce) just show the ingredient. If an ingredient isn't on special at the
@@ -74,8 +83,9 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
 - **Common pantry staples** (salt, pepper, oil, etc.) are listed separately on each
   card and are not added to the shopping cart or its total, since you're assumed to
   already have them.
-- **Reset button** clears all card selections (and the cart) and turns every meal
-  type filter back on.
+- **Back To Stores button** reloads the page, taking you back to the initial
+  store prompt (clearing selections and re-fetching Supabase in the process)
+  so you can shop a different store.
 - **Generate Meal Plan button** builds a stylish whole-week plan document (all
   currently-filtered meals, priced for the chosen store) and downloads it as
   `MealPlan_<Store>_<yyyymmdd>.html` (generation date, not meal date) — open that
@@ -83,13 +93,6 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
   produced per store per calendar day: clicking the button again the same day just
   reopens that same plan instead of generating a new one (tracked in the browser's
   local storage, since a static page has no real filesystem to check against).
-- **Check for new store data** re-fetches `dbPromotionalIngredients`/`tStores`
-  from Supabase without a full page reload, so if the scraper has added a new
-  store since the app loaded, this picks it up live. If a store you don't
-  already have shows up, it swaps in the fresh data, reopens the store
-  prompt, and — as soon as you pick a store there — immediately generates
-  that store's weekly plan. Works whether the page is opened via `file://`
-  or served over `http(s)://`, since it's a cross-origin request to Supabase.
 - Selecting a card's checkbox adds its ingredients to the **shopping cart**
   (floating cart button, bottom-right). Ingredients shared by two or more selected
   meals are merged into a single row with a `×N` badge — click it to see which

@@ -9,6 +9,7 @@
   --v-color: #43a047;
   --nv-color: #e0672a;
   --vg-color: #00897b;
+  --gf-color: #7b5ea7;
   --shadow: 0 2px 10px rgba(30, 40, 30, 0.08);
   --shadow-lg: 0 12px 40px rgba(20, 30, 20, 0.18);
   --radius: 14px;
@@ -94,27 +95,8 @@ h1, h2, h3 { margin: 0; }
 .chip--v { color: var(--v-color); }
 .chip--nv { color: var(--nv-color); }
 .chip--vg { color: var(--vg-color); }
+.chip--gf { color: var(--gf-color); }
 .chip:has(input:checked) { background: color-mix(in srgb, currentColor 12%, var(--surface)); border-color: currentColor; }
-
-.store-select {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.store-select select {
-  font: inherit;
-  font-size: 1.05rem;
-  font-weight: 600;
-  min-width: 220px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 2px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-}
 
 .generate-group { display: flex; align-items: center; gap: 10px; }
 .plan-status { font-size: 0.76rem; color: var(--muted); max-width: 220px; }
@@ -161,6 +143,7 @@ main { padding: 20px 24px 100px; }
   gap: 10px;
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
 }
 .meal-card__select {
   margin-top: 4px;
@@ -186,6 +169,7 @@ main { padding: 20px 24px 100px; }
 .badge--V { background: var(--v-color); }
 .badge--NV { background: var(--nv-color); }
 .badge--VG { background: var(--vg-color); }
+.badge--GF { background: var(--gf-color); }
 .meal-card__date { font-size: 0.78rem; color: var(--muted); }
 .meal-card__servings { font-size: 0.78rem; color: var(--muted); }
 

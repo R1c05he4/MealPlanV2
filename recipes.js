@@ -3,6 +3,12 @@
 // look up live size/price/special info from data.js at render time.
 //
 // category: "V" (vegetarian), "NV" (non-vegetarian), "VG" (vegan)
+// glutenFree: true if the recipe's packaged ingredients are gluten-free per
+// the manufacturer's own product page/ingredient list at the time this was
+// written (see PR notes) — an orthogonal tag, independent of category, since
+// e.g. a vegan dish can also be GF. Formulations can change: if this matters
+// for a real dietary restriction, verify current packaging before relying
+// on this tag.
 // dayOffset: days after the CSV dump date (0 = dump day itself)
 // ingredients[].qty: how many pack units of that special the recipe needs
 window.MEAL_PLANS = [
@@ -35,6 +41,7 @@ window.MEAL_PLANS = [
     dayOffset: 1,
     name: 'Coconut Curry Vegetable & Chickpea Bowl',
     category: 'VG',
+    glutenFree: true,
     servings: 4,
     emoji: '🍛',
     gradient: ['#f7971e', '#ffd200'],
@@ -83,6 +90,7 @@ window.MEAL_PLANS = [
     dayOffset: 3,
     name: 'Cantonese Chicken & Bok Choy Stir-fry',
     category: 'NV',
+    glutenFree: true,
     servings: 4,
     emoji: '🥡',
     gradient: ['#ee0979', '#ff6a00'],
@@ -154,6 +162,7 @@ window.MEAL_PLANS = [
     dayOffset: 6,
     name: 'Roast Cauliflower, Pumpkin & Chickpea Salad',
     category: 'V',
+    glutenFree: true,
     servings: 4,
     emoji: '🥗',
     gradient: ['#11998e', '#38ef7d'],

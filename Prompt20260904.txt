@@ -1,0 +1,8 @@
+Generate meal plan  from ingredients on dbPromotionalIngredients table only.
+Generate every meal type : Vegetarian (V), Non-Vegetarian (NV), Vegan (VG) and Gluten-Free (GF) if possible
+Card is selected either by clicking check box or card header. Deselection applies vice versa.
+Sub-title should say Specials from PAK'nSave [selected store] plus last scraped date
+Remove "check for new store data" button
+Remove store dropdown selection. 
+Remove "selection & meal types" button.
+Add Back To Stores button. When clicked, refresh and back to initial store selection page.

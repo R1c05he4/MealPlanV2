@@ -6,11 +6,13 @@
   let rows = [];
   let dumpDate = new Date();
   let stores = [];
+  let storeScrapedAt = {}; // store name -> YYYYMMDD string, for the per-store "last scraped" subtitle
   let productIndex = new Map(); // product name -> array of rows across stores
 
   function rebuildIndexes(dataset) {
     rows = (dataset && dataset.rows) || [];
     dumpDate = parseDumpDate(dataset && dataset.dumpDate);
+    storeScrapedAt = (dataset && dataset.storeScrapedAt) || {};
     stores = [...new Set(rows.map(r => r.store))].sort();
     productIndex = new Map();
     for (const r of rows) {
@@ -20,12 +22,12 @@
   }
   const state = {
     activeCategories: new Set(['V', 'NV', 'VG']),
+    gfOnly: false, // narrows the above further to gluten-free meals only; independent of category
     storeFilter: null, // set once the user answers the store prompt; app is scoped to that store only
     selectedMeals: new Set(),
     checkedCartItems: new Set(), // ingredient keys the shopper still needs to buy
     openUsesKey: null,
   };
-  let pendingAutoGenerate = false; // true when the store prompt was reopened by "Check for new store data"
 
   function parseDumpDate(str) {
     if (str && /^\d{8}$/.test(str)) {
@@ -97,18 +99,15 @@
   const sourceLine = document.getElementById('sourceLine');
 
   function init() {
-    const storeSelect = document.getElementById('storeSelect');
-    populateStoreSelect();
-    storeSelect.addEventListener('change', () => {
-      state.storeFilter = storeSelect.value;
-      renderCards();
-      renderCart();
-    });
-
     document.querySelectorAll('#categoryFilters input').forEach(cb => {
       cb.addEventListener('change', () => {
-        if (cb.checked) state.activeCategories.add(cb.value);
-        else state.activeCategories.delete(cb.value);
+        if (cb.value === 'GF') {
+          state.gfOnly = cb.checked;
+        } else if (cb.checked) {
+          state.activeCategories.add(cb.value);
+        } else {
+          state.activeCategories.delete(cb.value);
+        }
         renderCards();
       });
     });
@@ -124,9 +123,8 @@
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
     document.getElementById('pdfBtn').addEventListener('click', generateInstructionsPdf);
-    document.getElementById('resetBtn').addEventListener('click', resetSelectionsAndTypes);
     document.getElementById('generateBtn').addEventListener('click', handleGeneratePlan);
-    document.getElementById('checkStoreBtn').addEventListener('click', checkForNewStoreData);
+    document.getElementById('backToStoresBtn').addEventListener('click', () => location.reload());
 
     document.body.classList.add('store-pending');
     renderStorePrompt();
@@ -135,25 +133,19 @@
     renderCart();
   }
 
-  function populateStoreSelect() {
-    const storeSelect = document.getElementById('storeSelect');
-    const previousValue = storeSelect.value;
-    storeSelect.innerHTML = '';
-    for (const s of stores) {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      storeSelect.appendChild(opt);
-    }
-    if (stores.includes(previousValue)) storeSelect.value = previousValue;
-  }
-
   function updateSourceLine() {
     if (!stores.length) {
       sourceLine.textContent = 'No specials data yet — waiting for the Supabase scraper to populate it.';
       return;
     }
-    const dumpLabel = dumpDate.toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' });
-    sourceLine.textContent = `Specials from ${stores.join(' & ')} — last scraped ${dumpLabel}`;
+    if (!state.storeFilter) {
+      sourceLine.textContent = 'Choose a store to see this week’s specials.';
+      return;
+    }
+    const scrapedRaw = storeScrapedAt[state.storeFilter];
+    const scrapedDate = scrapedRaw ? parseDumpDate(scrapedRaw) : dumpDate;
+    const dumpLabel = scrapedDate.toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    sourceLine.textContent = `Specials from ${state.storeFilter} — last scraped ${dumpLabel}`;
   }
 
   // ---------- Store prompt ----------
@@ -162,7 +154,7 @@
     container.innerHTML = '';
     if (!stores.length) {
       const msg = document.createElement('p');
-      msg.textContent = 'No specials data yet — the Supabase scraper hasn’t populated any stores. Try "Check for new store data" again shortly.';
+      msg.textContent = 'No specials data yet — the Supabase scraper hasn’t populated any stores. Try reloading the page shortly.';
       container.appendChild(msg);
     } else {
       for (const s of stores) {
@@ -178,62 +170,10 @@
 
   function chooseStore(store) {
     state.storeFilter = store;
-    document.getElementById('storeSelect').value = store;
     document.getElementById('storePromptOverlay').classList.remove('is-open');
     document.getElementById('generateBtn').disabled = false;
     document.body.classList.remove('store-pending');
-    renderCards();
-    renderCart();
-    if (pendingAutoGenerate) {
-      pendingAutoGenerate = false;
-      handleGeneratePlan();
-    }
-  }
-
-  // ---------- Check for new store data ----------
-  // Re-fetches dbPromotionalIngredients/tStores from Supabase to pick up
-  // whatever the scraper has added since this page loaded, without needing
-  // a full reload. If it contains a store we don't already know about, the
-  // fresh dataset is adopted in place and the store prompt reopens so the
-  // user can jump straight into a plan for the new store.
-  async function checkForNewStoreData() {
-    const statusEl = document.getElementById('checkStoreStatus');
-    statusEl.textContent = 'Checking Supabase for new store data…';
-
-    let freshDataset;
-    try {
-      freshDataset = await window.loadDealsData();
-    } catch (err) {
-      console.error('Failed to check Supabase for new store data:', err);
-      statusEl.textContent = 'Could not reach Supabase — check your connection and try again.';
-      return;
-    }
-
-    const freshStores = [...new Set((freshDataset.rows || []).map(r => r.store))];
-    const newStores = freshStores.filter(s => !stores.includes(s));
-
-    if (!newStores.length) {
-      statusEl.textContent = 'No new store data found — already up to date.';
-      return;
-    }
-
-    rebuildIndexes(freshDataset);
-    populateStoreSelect();
     updateSourceLine();
-
-    statusEl.textContent = `New store data found: ${newStores.join(', ')}. Choose a store below.`;
-    pendingAutoGenerate = true;
-    document.body.classList.add('store-pending');
-    renderStorePrompt();
-  }
-
-  // ---------- Reset ----------
-  function resetSelectionsAndTypes() {
-    state.activeCategories = new Set(['V', 'NV', 'VG']);
-    document.querySelectorAll('#categoryFilters input').forEach(cb => { cb.checked = true; });
-    state.selectedMeals.clear();
-    state.checkedCartItems.clear();
-    state.openUsesKey = null;
     renderCards();
     renderCart();
   }
@@ -242,6 +182,7 @@
     cardGrid.innerHTML = '';
     for (const recipe of window.MEAL_PLANS) {
       if (!state.activeCategories.has(recipe.category)) continue;
+      if (state.gfOnly && !recipe.glutenFree) continue;
       cardGrid.appendChild(buildCard(recipe));
     }
   }
@@ -270,12 +211,22 @@
         <div class="meal-card__name">${recipe.name}</div>
         <div class="meal-card__meta">
           <span class="badge badge--${recipe.category}">${recipe.category}</span>
+          ${recipe.glutenFree ? '<span class="badge badge--GF">GF</span>' : ''}
           <span class="meal-card__date">${fmtDate(date)}</span>
           <span class="meal-card__servings">· Serves ${recipe.servings}</span>
         </div>
       </div>`;
-    ribbon.querySelector('.meal-card__select').addEventListener('change', (e) => {
+    const selectCheckbox = ribbon.querySelector('.meal-card__select');
+    selectCheckbox.addEventListener('change', (e) => {
       toggleMeal(recipe.id, e.target.checked);
+    });
+    // The whole ribbon (header) also toggles selection, in sync with the
+    // checkbox — except clicks on the checkbox itself, which already
+    // handle it via the 'change' listener above.
+    ribbon.addEventListener('click', (e) => {
+      if (e.target.closest('.meal-card__select')) return;
+      selectCheckbox.checked = !selectCheckbox.checked;
+      toggleMeal(recipe.id, selectCheckbox.checked);
     });
     card.appendChild(ribbon);
 

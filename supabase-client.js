@@ -69,16 +69,20 @@ window.SUPABASE_CONFIG = {
     const storeNameById = new Map(storeRows.map(s => [s.StoreID, s.StoreName]));
 
     let latestScrapedAt = null;
+    const latestScrapedAtByStore = new Map();
     const rows = ingredientRows.map(r => {
       const salePriceRaw = r['Sale Price'];
       const savingRaw = r['Saving'];
       const sale = parseSalePrice(salePriceRaw);
       const saving = parseSaving(savingRaw);
-      if (r.scraped_at && (!latestScrapedAt || r.scraped_at > latestScrapedAt)) {
-        latestScrapedAt = r.scraped_at;
+      const storeName = storeNameById.get(r.StoreID) || r.StoreName;
+      if (r.scraped_at) {
+        if (!latestScrapedAt || r.scraped_at > latestScrapedAt) latestScrapedAt = r.scraped_at;
+        const prevForStore = latestScrapedAtByStore.get(storeName);
+        if (!prevForStore || r.scraped_at > prevForStore) latestScrapedAtByStore.set(storeName, r.scraped_at);
       }
       return {
-        store: storeNameById.get(r.StoreID) || r.StoreName,
+        store: storeName,
         product: r.Product,
         size: r['Size/Weight'] || '',
         unitPrice: r['Unit Price'] || '',
@@ -90,12 +94,17 @@ window.SUPABASE_CONFIG = {
       };
     });
 
-    // app.js expects an 8-digit YYYYMMDD string (see parseDumpDate).
+    // app.js expects 8-digit YYYYMMDD strings (see parseDumpDate).
     const dumpDate = latestScrapedAt ? latestScrapedAt.slice(0, 10).replace(/-/g, '') : '';
+    const storeScrapedAt = {};
+    for (const [store, iso] of latestScrapedAtByStore) {
+      storeScrapedAt[store] = iso.slice(0, 10).replace(/-/g, '');
+    }
 
     return {
       generatedFrom: [{ source: 'Supabase: dbPromotionalIngredients', count: rows.length }],
       dumpDate,
+      storeScrapedAt,
       rows,
     };
   };
