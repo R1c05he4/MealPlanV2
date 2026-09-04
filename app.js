@@ -220,14 +220,6 @@
     selectCheckbox.addEventListener('change', (e) => {
       toggleMeal(recipe.id, e.target.checked);
     });
-    // The whole ribbon (header) also toggles selection, in sync with the
-    // checkbox — except clicks on the checkbox itself, which already
-    // handle it via the 'change' listener above.
-    ribbon.addEventListener('click', (e) => {
-      if (e.target.closest('.meal-card__select')) return;
-      selectCheckbox.checked = !selectCheckbox.checked;
-      toggleMeal(recipe.id, selectCheckbox.checked);
-    });
     card.appendChild(ribbon);
 
     const body = document.createElement('div');
@@ -249,8 +241,21 @@
         <span class="meal-card__saving-line">${saving > 0 ? 'You save ' + money(saving) : ' '}</span>
       </div>
       <button type="button" class="meal-card__link">Recipe & image ›</button>`;
-    footer.querySelector('.meal-card__link').addEventListener('click', () => openModal(recipe, lines, date));
+    footer.querySelector('.meal-card__link').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openModal(recipe, lines, date);
+    });
     card.appendChild(footer);
+
+    // Clicking anywhere else in the card toggles its selection, in sync
+    // with the checkbox — except the checkbox itself (already handled by
+    // its own 'change' listener above) and the "Recipe & image" button
+    // (which stops propagation to keep its own distinct action).
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.meal-card__select')) return;
+      selectCheckbox.checked = !selectCheckbox.checked;
+      toggleMeal(recipe.id, selectCheckbox.checked);
+    });
 
     return card;
   }

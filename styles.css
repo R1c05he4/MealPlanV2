@@ -118,6 +118,7 @@ main { padding: 20px 24px 100px; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  cursor: pointer;
   transition: box-shadow .15s, transform .15s, border-color .15s;
 }
 .meal-card--selected {
@@ -143,7 +144,6 @@ main { padding: 20px 24px 100px; }
   gap: 10px;
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
 }
 .meal-card__select {
   margin-top: 4px;
@@ -183,6 +183,9 @@ main { padding: 20px 24px 100px; }
   font-size: 0.86rem;
 }
 .ingredient-row:last-child { border-bottom: none; }
+@media (hover: hover) and (pointer: fine) {
+  .ingredient-row:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+}
 .ingredient-row__name { line-height: 1.25; }
 .ingredient-row__brand { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
 .ingredient-row__size { display: block; font-size: 0.72rem; color: var(--muted); }
