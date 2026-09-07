@@ -25,7 +25,11 @@ refresh them. An external scraper writes rows into two tables in the
   `Product`, `Size/Weight`, `Unit Price`, `Sale Price`, `Saving`, `scraped_at`,
   `StoreID`).
 - `tStores` — `StoreID`, `StoreName`, `Island`, `City`. The app joins on
-  `StoreID` for the canonical store name.
+  `StoreID` for the canonical store name when this table has rows; if it's
+  empty or a row's `StoreID` doesn't match (both true as of this writing —
+  `dbPromotionalIngredients.StoreID` is currently `null` on every row), it
+  falls back to that row's own `StoreName` column, which is already the
+  full canonical name.
 
 `supabase-client.js` fetches both tables (paginated, 1000 rows/request) using
 the project's **publishable** (`sb_publishable_...`) key and reshapes them
@@ -54,6 +58,36 @@ node tools/build-data.js
 
 and swap the `<script src="supabase-client.js">` tag in `index.html` back to
 `<script src="data.js">`.
+
+### Re-auditing recipes.js after a Supabase refresh
+
+There's no script for this — `recipes.js`'s ingredient `match` strings are
+exact-string product names, so when the external scraper's weekly run
+replaces the specials, some of last week's matches stop resolving (the app
+shows those rows as "not on special") and any store the scraper newly added
+has no curated list at all yet (it silently falls back to the first store's
+list — see `currentMealPlans()` in `app.js`). To re-curate:
+
+1. Query the live tables directly with the same publishable key
+   `supabase-client.js` uses, e.g.
+   `curl "https://bfelamslupuonlfntjol.supabase.co/rest/v1/dbPromotionalIngredients?select=*" -H "apikey: <key>" -H "Authorization: Bearer <key>"`
+   (paginate with `&offset=`/`&limit=` past 1000 rows). Compare the distinct
+   `StoreName` values against the keys already in
+   `window.MEAL_PLANS_BY_STORE` to spot new/removed stores.
+2. For each store, filter to rows with a parseable `Sale Price` (mirrors
+   `resolveIngredient()` in `app.js`) to see what's actually promotable that
+   week — proteins, starches, sauces, and separately the fresh produce
+   (`Size/Weight` of `ea`/`kg`), since that's normally where stores differ
+   most from each other.
+3. Rebuild each store's 7 recipes from what's live, keeping every
+   `ingredients[].match` an exact `Product` string for that store, and
+   re-verify with the same query (0 unresolved ingredients) before
+   committing — a recipe with an unresolvable ingredient is exactly the
+   "not on special" bug this process exists to catch.
+
+The last full re-audit (this session) found 6 live stores instead of the
+previous 3, and ~2/3 of the existing ingredients no longer resolving — the
+scale of drift can be substantial, not just a few swapped products.
 
 ## What it does
 
@@ -90,10 +124,17 @@ and swap the `<script src="supabase-client.js">` tag in `index.html` back to
   own independently-curated 7 recipes** (`recipes.js`,
   `window.MEAL_PLANS_BY_STORE`) rather than one fixed list applied
   everywhere: what substitutes for e.g. dry pasta or a leafy green
-  genuinely differs store to store (a boxed pasta-and-sauce product at one,
-  gnocchi + a jarred sauce at another), so the same nominal dish can use
+  genuinely differs store to store, so the same nominal dish can use
   different real ingredients — and even a different name — depending which
-  store you picked.
+  store you picked. As of this writing the scraper covers 6 stores (Albany,
+  Westgate, Lincoln Road, Sylvia Park, Royal Oak, Silverdale), each with its
+  own fully independent list; fresh produce is where they diverge most —
+  Lincoln Road in particular had no fresh vegetables on special at all in
+  the last audit, so its recipes lean on avocado, frozen prawns and raw
+  chicken cutlets instead. A store the scraper adds later, before anyone
+  curates a list for it, falls back to Albany's list rather than showing
+  nothing (see `currentMealPlans()` in `app.js`) — that's a stopgap, not a
+  substitute for an accurate list for that store.
 - **Common pantry staples** (salt, pepper, oil, etc.) are listed separately on each
   card and are not added to the shopping cart or its total, since you're assumed to
   already have them.
