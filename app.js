@@ -106,6 +106,19 @@
     return { total, saving };
   }
 
+  // Ingredient names shown to the shopper are the real Supabase product name
+  // (ing.match) with the brand prefix stripped, never the curator-written
+  // ing.generic — so wording always matches what's on the shelf/receipt.
+  function displayIngredientName(ing) {
+    const match = ing.match || '';
+    const brand = ing.brand || '';
+    if (brand && match.toLowerCase().startsWith(brand.toLowerCase())) {
+      const stripped = match.slice(brand.length).replace(/^[\s,-]+/, '');
+      if (stripped) return stripped;
+    }
+    return match;
+  }
+
   // ---------- Rendering: meal cards ----------
   const cardGrid = document.getElementById('cardGrid');
   const sourceLine = document.getElementById('sourceLine');
@@ -278,7 +291,7 @@
     if (!line.resolved) {
       row.innerHTML = `
         <div class="ingredient-row__name">
-          ${line.generic}
+          ${displayIngredientName(line)}
           ${line.brand ? `<span class="ingredient-row__brand">${line.brand}</span>` : ''}
         </div>
         <div class="ingredient-row__price ingredient-row__unresolved">not on special</div>`;
@@ -290,7 +303,7 @@
     row.title = 'PromotionalIngredientID: ' + line.row.id;
     row.innerHTML = `
       <div class="ingredient-row__name">
-        ${line.generic} ${line.qty > 1 ? '×' + line.qty : ''}
+        ${displayIngredientName(line)} ${line.qty > 1 ? '×' + line.qty : ''}
         ${line.brand ? `<span class="ingredient-row__brand">${line.brand}</span>` : ''}
         <span class="ingredient-row__size">${line.size}</span>
       </div>
@@ -350,7 +363,7 @@
       }
       cartKeysEverSeen.add(entry.key);
     }
-    return { items: [...map.values()].sort((a, b) => a.generic.localeCompare(b.generic)), pantry: [...pantrySet].sort() };
+    return { items: [...map.values()].sort((a, b) => displayIngredientName(a).localeCompare(displayIngredientName(b))), pantry: [...pantrySet].sort() };
   }
   const cartKeysEverSeen = new Set();
 
@@ -385,11 +398,11 @@
       row.className = 'cart-item' + (checked ? '' : ' is-unchecked');
       const usesOpen = state.openUsesKey === item.key;
       row.innerHTML = `
-        <input type="checkbox" ${checked ? 'checked' : ''} aria-label="Need to buy ${item.generic}" />
+        <input type="checkbox" ${checked ? 'checked' : ''} aria-label="Need to buy ${displayIngredientName(item)}" />
         <div class="cart-item__main">
           <div class="cart-item__name-row">
             <div>
-              <div class="cart-item__name">${item.generic}${item.uses.length > 1 ? `<button type="button" class="cart-item__count-btn">×${item.uses.length}</button>` : ''}</div>
+              <div class="cart-item__name">${displayIngredientName(item)}${item.uses.length > 1 ? `<button type="button" class="cart-item__count-btn">×${item.uses.length}</button>` : ''}</div>
               ${item.brand ? `<div class="cart-item__brand">${item.brand}</div>` : ''}
             </div>
             <div class="cart-item__price">${item.resolved ? money(item.lineTotal) : '—'}</div>
@@ -442,7 +455,7 @@
         </div>
         <div class="modal-section-title">Ingredients</div>
         <ul>
-          ${lines.map(l => `<li>${l.generic}${l.brand ? ' (' + l.brand + ')' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special'}</li>`).join('')}
+          ${lines.map(l => `<li>${displayIngredientName(l)}${l.brand ? ' (' + l.brand + ')' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special'}</li>`).join('')}
         </ul>
         <div class="modal-section-title">Pantry staples</div>
         <div>${recipe.pantry.join(', ')}</div>
@@ -476,7 +489,7 @@
           </div>
           <h3>Ingredients</h3>
           <ul>
-            ${lines.map(l => `<li>${l.generic}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special this week'}</li>`).join('')}
+            ${lines.map(l => `<li>${displayIngredientName(l)}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special this week'}</li>`).join('')}
           </ul>
           <h3>Pantry staples</h3>
           <p class="pantry">${recipe.pantry.join(', ')}</p>
@@ -575,7 +588,7 @@
           </div>
           <h3>Ingredients</h3>
           <ul>
-            ${lines.map(l => `<li>${l.generic}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size + ' — ' + money(l.lineTotal) : 'not on special this week'}</li>`).join('')}
+            ${lines.map(l => `<li>${displayIngredientName(l)}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size + ' — ' + money(l.lineTotal) : 'not on special this week'}</li>`).join('')}
           </ul>
           <h3>Pantry staples</h3>
           <p class="pantry">${recipe.pantry.join(', ')}</p>

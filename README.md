@@ -79,15 +79,18 @@ list — see `currentMealPlans()` in `app.js`). To re-curate:
    week — proteins, starches, sauces, and separately the fresh produce
    (`Size/Weight` of `ea`/`kg`), since that's normally where stores differ
    most from each other.
-3. Rebuild each store's 7 recipes from what's live, keeping every
-   `ingredients[].match` an exact `Product` string for that store, and
-   re-verify with the same query (0 unresolved ingredients) before
-   committing — a recipe with an unresolvable ingredient is exactly the
-   "not on special" bug this process exists to catch.
+3. Rebuild each store's recipes from what's live — up to 7 each for V, NV
+   and VG — keeping every `ingredients[].match` an exact `Product` string
+   for that store, and re-verify with the same query (0 unresolved
+   ingredients) before committing — a recipe with an unresolvable
+   ingredient is exactly the "not on special" bug this process exists to
+   catch.
 
 The last full re-audit (this session) found 6 live stores instead of the
 previous 3, and ~2/3 of the existing ingredients no longer resolving — the
-scale of drift can be substantial, not just a few swapped products.
+scale of drift can be substantial, not just a few swapped products. A
+later session expanded every store from 7 mixed recipes to up to 21 (up to
+7 each of V/NV/VG) using the same live-catalog validation approach.
 
 ## What it does
 
@@ -96,15 +99,22 @@ scale of drift can be substantial, not just a few swapped products.
   Every price and special shown afterwards is limited strictly to that store
   — no cross-store fallback, and no way to switch stores without going back
   through this prompt.
-- **7-day meal plan**, one card per day, each tagged **V** (vegetarian), **NV**
-  (non-vegetarian) or **VG** (vegan) — plus a **GF** (gluten-free) badge on top of
-  that where it applies, since gluten-free is independent of the other three (a
-  dish can be both Vegan and GF, say). Filter the grid with the checkboxes in the
-  header; the GF checkbox narrows whatever's already showing down to gluten-free
-  meals only, rather than being another either/or category. GF tags (and the
-  vegetarian rennet source behind the **V** tag, for cheese ingredients) reflect
-  the packaged ingredients' manufacturer-published ingredient lists at the time
-  each recipe was written — formulations can change, so verify current
+- **Three parallel 7-day meal plans per store** — up to 7 recipes each for
+  **V** (vegetarian), **NV** (non-vegetarian) and **VG** (vegan), up to 21
+  cards total, plus a **GF** (gluten-free) badge on top of that where it
+  applies, since gluten-free is independent of the other three (a dish can
+  be both Vegan and GF, say). A given calendar day can show up to three
+  cards side by side — one per category — since each category's `dayOffset`
+  cycles 0–6 independently. Filter the grid with the checkboxes in the
+  header to narrow down to one or two categories at a time; the GF checkbox
+  further narrows whatever's already showing down to gluten-free meals
+  only, rather than being another either/or category. Where a store's live
+  specials can't realistically support 7 distinct, coherent dishes in a
+  category, that category simply has fewer than 7 rather than padding with
+  unrealistic combinations. GF tags (and the vegetarian rennet source
+  behind the **V** tag, for cheese ingredients) reflect the packaged
+  ingredients' manufacturer-published ingredient lists at the time each
+  recipe was written — formulations can change, so verify current
   packaging if this matters for an actual dietary restriction.
 - Each card's ribbon (directly under the meal image) holds the "add to cart"
   checkbox, category/GF badges, date, meal name and serving count. Clicking
@@ -121,17 +131,18 @@ scale of drift can be substantial, not just a few swapped products.
   promotional deal, never a full catalogue — so every recipe ingredient is
   chosen to be something realistically promotable at that specific store,
   not just a plausible product name. This is also why **each store has its
-  own independently-curated 7 recipes** (`recipes.js`,
-  `window.MEAL_PLANS_BY_STORE`) rather than one fixed list applied
-  everywhere: what substitutes for e.g. dry pasta or a leafy green
-  genuinely differs store to store, so the same nominal dish can use
-  different real ingredients — and even a different name — depending which
-  store you picked. As of this writing the scraper covers 6 stores (Albany,
-  Westgate, Lincoln Road, Sylvia Park, Royal Oak, Silverdale), each with its
-  own fully independent list; fresh produce is where they diverge most —
-  Lincoln Road in particular had no fresh vegetables on special at all in
-  the last audit, so its recipes lean on avocado, frozen prawns and raw
-  chicken cutlets instead. A store the scraper adds later, before anyone
+  own independently-curated recipe list** — up to 7 recipes each for V, NV
+  and VG, up to 21 total — (`recipes.js`, `window.MEAL_PLANS_BY_STORE`)
+  rather than one fixed list applied everywhere: what substitutes for e.g.
+  dry pasta or a leafy green genuinely differs store to store, so the same
+  nominal dish can use different real ingredients — and even a different
+  name — depending which store you picked. As of this writing the scraper
+  covers 6 stores (Albany, Westgate, Lincoln Road, Sylvia Park, Royal Oak,
+  Silverdale), each with its own fully independent list; fresh produce is
+  where they diverge most — Lincoln Road in particular still has no fresh
+  vegetables on special, only avocado, so its recipes lean on that plus
+  frozen prawns, raw chicken cutlets and a wide range of canned legumes for
+  the vegan slots instead. A store the scraper adds later, before anyone
   curates a list for it, falls back to Albany's list rather than showing
   nothing (see `currentMealPlans()` in `app.js`) — that's a stopgap, not a
   substitute for an accurate list for that store.
@@ -167,7 +178,7 @@ scale of drift can be substantial, not just a few swapped products.
 |---|---|
 | `index.html` / `styles.css` / `app.js` | The app itself |
 | `supabase-client.js` | Fetches specials live from Supabase (`dbPromotionalIngredients` + `tStores`) |
-| `recipes.js` | 7 meal definitions per store — each store's list is independently curated so every ingredient resolves against that store's own specials |
+| `recipes.js` | Up to 21 meal definitions per store (up to 7 each of V/NV/VG) — each store's list is independently curated so every ingredient resolves against that store's own specials |
 | `tools/build-data.js` | *(legacy)* CSV → `data.js` converter, no longer used by the app |
 | `data.js` | *(legacy)* Generated — no longer loaded by `index.html` |
 | `datadump/*.csv` | *(legacy)* Source specials data, superseded by the Supabase tables |

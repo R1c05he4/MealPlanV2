@@ -1,0 +1,2 @@
+On the card, display the ingredient names as is, excluding the brand, do not change the wording. The same applies to the shopping card.
+Increase font size of pantry staples to become readable in smaller screen.
