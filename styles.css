@@ -98,8 +98,12 @@ h1, h2, h3 { margin: 0; }
 .chip--gf { color: var(--gf-color); }
 .chip:has(input:checked) { background: color-mix(in srgb, currentColor 12%, var(--surface)); border-color: currentColor; }
 
-.generate-group { display: flex; align-items: center; gap: 10px; }
-.plan-status { font-size: 0.76rem; color: var(--muted); max-width: 220px; }
+.header-total {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.header-total strong { font-size: 1.35rem; color: var(--accent); margin-left: 4px; }
 
 /* ---------- Card grid ---------- */
 main { padding: 20px 24px 100px; }
@@ -198,7 +202,7 @@ main { padding: 20px 24px 100px; }
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   color: var(--muted);
 }
 .pantry-note b { color: var(--text); }
@@ -320,17 +324,17 @@ main { padding: 20px 24px 100px; }
 .cart-item__brand { font-size: 0.74rem; color: var(--muted); }
 .cart-item__qty-line { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 .cart-item__price { font-weight: 700; white-space: nowrap; }
-.cart-item__count-btn {
+.cart-item__count-badge {
+  display: inline-block;
   background: var(--accent-soft);
   color: var(--accent);
-  border: none;
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
   padding: 1px 8px;
   margin-left: 6px;
-  cursor: pointer;
 }
+.cart-item__main--expandable { cursor: pointer; }
 .cart-item__uses {
   margin: 6px 0 0;
   padding: 8px 10px;
@@ -347,7 +351,7 @@ main { padding: 20px 24px 100px; }
 
 .cart-pantry {
   padding: 10px 18px 4px;
-  font-size: 0.8rem;
+  font-size: 0.86rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
 }
@@ -378,11 +382,6 @@ main { padding: 20px 24px 100px; }
 .btn--primary { background: var(--accent); color: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn--inline { width: auto; padding: 8px 14px; font-size: 0.82rem; }
-.btn--secondary {
-  background: var(--surface);
-  color: var(--text);
-  border: 1.5px solid var(--border);
-}
 
 /* ---------- Modal ---------- */
 .modal-overlay {

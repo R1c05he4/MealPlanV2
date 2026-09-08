@@ -106,6 +106,19 @@
     return { total, saving };
   }
 
+  // Ingredient names shown to the shopper are the real Supabase product name
+  // (ing.match) with the brand prefix stripped, never the curator-written
+  // ing.generic — so wording always matches what's on the shelf/receipt.
+  function displayIngredientName(ing) {
+    const match = ing.match || '';
+    const brand = ing.brand || '';
+    if (brand && match.toLowerCase().startsWith(brand.toLowerCase())) {
+      const stripped = match.slice(brand.length).replace(/^[\s,-]+/, '');
+      if (stripped) return stripped;
+    }
+    return match;
+  }
+
   // ---------- Rendering: meal cards ----------
   const cardGrid = document.getElementById('cardGrid');
   const sourceLine = document.getElementById('sourceLine');
@@ -135,7 +148,6 @@
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
     document.getElementById('pdfBtn').addEventListener('click', generateInstructionsPdf);
-    document.getElementById('generateBtn').addEventListener('click', handleGeneratePlan);
     document.getElementById('backToStoresBtn').addEventListener('click', () => location.reload());
 
     document.body.classList.add('store-pending');
@@ -183,7 +195,6 @@
   function chooseStore(store) {
     state.storeFilter = store;
     document.getElementById('storePromptOverlay').classList.remove('is-open');
-    document.getElementById('generateBtn').disabled = false;
     document.body.classList.remove('store-pending');
     updateSourceLine();
     renderCards();
@@ -252,7 +263,7 @@
         Total: <b>${money(total)}</b><br />
         <span class="meal-card__saving-line">${saving > 0 ? 'You save ' + money(saving) : ' '}</span>
       </div>
-      <button type="button" class="meal-card__link">Recipe & image ›</button>`;
+      <button type="button" class="meal-card__link">Show Recipe ›</button>`;
     footer.querySelector('.meal-card__link').addEventListener('click', (e) => {
       e.stopPropagation();
       openModal(recipe, lines, date);
@@ -278,7 +289,7 @@
     if (!line.resolved) {
       row.innerHTML = `
         <div class="ingredient-row__name">
-          ${line.generic}
+          ${displayIngredientName(line)}
           ${line.brand ? `<span class="ingredient-row__brand">${line.brand}</span>` : ''}
         </div>
         <div class="ingredient-row__price ingredient-row__unresolved">not on special</div>`;
@@ -290,7 +301,7 @@
     row.title = 'PromotionalIngredientID: ' + line.row.id;
     row.innerHTML = `
       <div class="ingredient-row__name">
-        ${line.generic} ${line.qty > 1 ? '×' + line.qty : ''}
+        ${displayIngredientName(line)} ${line.qty > 1 ? '×' + line.qty : ''}
         ${line.brand ? `<span class="ingredient-row__brand">${line.brand}</span>` : ''}
         <span class="ingredient-row__size">${line.size}</span>
       </div>
@@ -350,7 +361,7 @@
       }
       cartKeysEverSeen.add(entry.key);
     }
-    return { items: [...map.values()].sort((a, b) => a.generic.localeCompare(b.generic)), pantry: [...pantrySet].sort() };
+    return { items: [...map.values()].sort((a, b) => displayIngredientName(a).localeCompare(displayIngredientName(b))), pantry: [...pantrySet].sort() };
   }
   const cartKeysEverSeen = new Set();
 
@@ -371,6 +382,7 @@
       cartList.innerHTML = '';
       cartPantry.innerHTML = '';
       grandTotalEl.textContent = money(0);
+      updateHeaderTotal(0);
       return;
     }
     cartEmpty.style.display = 'none';
@@ -383,32 +395,32 @@
 
       const row = document.createElement('div');
       row.className = 'cart-item' + (checked ? '' : ' is-unchecked');
-      const usesOpen = state.openUsesKey === item.key;
+      const multiUse = item.uses.length > 1;
+      const usesOpen = multiUse && state.openUsesKey === item.key;
       row.innerHTML = `
-        <input type="checkbox" ${checked ? 'checked' : ''} aria-label="Need to buy ${item.generic}" />
-        <div class="cart-item__main">
+        <input type="checkbox" ${checked ? 'checked' : ''} aria-label="Need to buy ${displayIngredientName(item)}" />
+        <div class="cart-item__main${multiUse ? ' cart-item__main--expandable' : ''}">
           <div class="cart-item__name-row">
             <div>
-              <div class="cart-item__name">${item.generic}${item.uses.length > 1 ? `<button type="button" class="cart-item__count-btn">×${item.uses.length}</button>` : ''}</div>
+              <div class="cart-item__name">${displayIngredientName(item)}${multiUse ? `<span class="cart-item__count-badge">×${item.uses.length}</span>` : ''}</div>
               ${item.brand ? `<div class="cart-item__brand">${item.brand}</div>` : ''}
             </div>
             <div class="cart-item__price">${item.resolved ? money(item.lineTotal) : '—'}</div>
           </div>
-          <div class="cart-item__qty-line">
-            ${item.resolved ? `Qty ${item.qty} × ${money(item.priceEach)} (${item.size})` : 'Not currently on special'}
-          </div>
-          <div class="cart-item__uses ${usesOpen ? 'is-open' : ''}">
-            ${item.uses.map(u => `<div>🍽️ ${u.name} — ${u.date}</div>`).join('')}
-          </div>
+          ${usesOpen
+            ? `<div class="cart-item__uses is-open">${item.uses.map(u => `<div>🍽️ ${u.name} — ${u.date}</div>`).join('')}</div>`
+            : `<div class="cart-item__qty-line">${item.resolved ? `Qty ${item.qty} × ${money(item.priceEach)} (${item.size})` : 'Not currently on special'}</div>`}
         </div>`;
       row.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
         if (e.target.checked) state.checkedCartItems.add(item.key);
         else state.checkedCartItems.delete(item.key);
         renderCart();
       });
-      const countBtn = row.querySelector('.cart-item__count-btn');
-      if (countBtn) {
-        countBtn.addEventListener('click', () => {
+      if (multiUse) {
+        // Selecting the ingredient itself (not the checkbox) expands the row
+        // to show which meals use it, replacing the qty line, instead of a
+        // separate clickable badge.
+        row.querySelector('.cart-item__main').addEventListener('click', () => {
           state.openUsesKey = state.openUsesKey === item.key ? null : item.key;
           renderCart();
         });
@@ -421,6 +433,20 @@
       : '';
 
     grandTotalEl.textContent = money(grandTotal);
+    updateHeaderTotal(grandTotal);
+  }
+
+  // Mirrors the cart's grand total in the header, next to the meal-type
+  // filters, so the running cost is visible without opening the cart.
+  // Hidden entirely until at least one meal is selected.
+  function updateHeaderTotal(grandTotal) {
+    const headerTotal = document.getElementById('headerTotal');
+    if (!state.selectedMeals.size) {
+      headerTotal.hidden = true;
+      return;
+    }
+    headerTotal.hidden = false;
+    document.getElementById('headerTotalAmount').textContent = money(grandTotal);
   }
 
   function setCartOpen(open) {
@@ -442,7 +468,7 @@
         </div>
         <div class="modal-section-title">Ingredients</div>
         <ul>
-          ${lines.map(l => `<li>${l.generic}${l.brand ? ' (' + l.brand + ')' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special'}</li>`).join('')}
+          ${lines.map(l => `<li>${displayIngredientName(l)}${l.brand ? ' (' + l.brand + ')' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special'}</li>`).join('')}
         </ul>
         <div class="modal-section-title">Pantry staples</div>
         <div>${recipe.pantry.join(', ')}</div>
@@ -476,7 +502,7 @@
           </div>
           <h3>Ingredients</h3>
           <ul>
-            ${lines.map(l => `<li>${l.generic}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special this week'}</li>`).join('')}
+            ${lines.map(l => `<li>${displayIngredientName(l)}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size : 'not on special this week'}</li>`).join('')}
           </ul>
           <h3>Pantry staples</h3>
           <p class="pantry">${recipe.pantry.join(', ')}</p>
@@ -528,120 +554,6 @@
     win.document.open();
     win.document.write(html);
     win.document.close();
-  }
-
-  function downloadHtmlFile(html, filename) {
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-  }
-
-  // ---------- Generate Meal Plan (whole-week doc, per store + per generation day) ----------
-  function slugifyStore(store) {
-    return store.replace(/pak'?n\s*save/gi, '').replace(/[^a-z0-9]+/gi, '') || 'Store';
-  }
-
-  function todayYYYYMMDD() {
-    const d = new Date();
-    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  function planStorageKey(store, dateStr) {
-    return `mealplan_generated::${slugifyStore(store)}::${dateStr}`;
-  }
-
-  function buildWeeklyPlanDocument(store, filename) {
-    const included = currentMealPlans().filter(r => state.activeCategories.has(r.category));
-    let grandTotal = 0, grandSaving = 0;
-    const sections = included.map(recipe => {
-      const lines = computeRecipeLines(recipe, store);
-      const { total, saving } = cardTotals(lines);
-      grandTotal += total; grandSaving += saving;
-      const date = new Date(dumpDate);
-      date.setDate(date.getDate() + recipe.dayOffset);
-      return `
-        <section class="meal">
-          <div class="meal-hero" style="background:linear-gradient(135deg, ${recipe.gradient[0]}, ${recipe.gradient[1]})">${recipe.emoji}</div>
-          <h2>${recipe.name}</h2>
-          <div class="meta">
-            <span class="badge badge--${recipe.category}">${recipe.category}</span>
-            &nbsp;${fmtDate(date)} &nbsp;·&nbsp; Serves ${recipe.servings}
-          </div>
-          <h3>Ingredients</h3>
-          <ul>
-            ${lines.map(l => `<li>${l.generic}${l.brand ? ' <em>(' + l.brand + ')</em>' : ''} — ${l.resolved ? l.qty + ' × ' + l.size + ' — ' + money(l.lineTotal) : 'not on special this week'}</li>`).join('')}
-          </ul>
-          <h3>Pantry staples</h3>
-          <p class="pantry">${recipe.pantry.join(', ')}</p>
-          <h3>Method</h3>
-          <ol>${recipe.instructions.map(s => `<li>${s}</li>`).join('')}</ol>
-          <p class="meal-total">Meal total: <b>${money(total)}</b>${saving > 0 ? ` &nbsp;·&nbsp; You save ${money(saving)}` : ''}</p>
-        </section>`;
-    }).join('<div class="page-break"></div>');
-
-    const genDateLabel = new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    return `<!doctype html>
-<html><head><meta charset="UTF-8" /><title>${filename}</title>
-<style>
-  body { font-family: Georgia, 'Times New Roman', serif; color: #222; margin: 0; padding: 0 40px 40px; }
-  .cover { text-align: center; padding: 60px 0 30px; }
-  .cover h1 { font-size: 2.2rem; margin-bottom: 6px; }
-  .cover p { color: #666; }
-  .summary { font-size: 1.05rem; color: #222 !important; margin-top: 6px; }
-  .meal { padding-top: 30px; }
-  .meal-hero { width: 100%; height: 120px; border-radius: 12px; display:flex; align-items:center; justify-content:center; font-size: 3rem; color:#fff; margin-bottom: 14px; }
-  h2 { font-size: 1.5rem; margin: 0 0 4px; }
-  .meta { font-size: 0.9rem; color: #555; margin-bottom: 10px; }
-  .badge { display:inline-block; font-size:0.7rem; font-weight:700; color:#fff; padding:2px 9px; border-radius:999px; }
-  .badge--V { background:#43a047; } .badge--NV { background:#e0672a; } .badge--VG { background:#00897b; }
-  h3 { font-size: 1.05rem; border-bottom: 2px solid #ddd; padding-bottom: 4px; margin-top: 20px; }
-  li { margin-bottom: 5px; }
-  .pantry { color: #555; font-style: italic; }
-  .meal-total { margin-top: 14px; font-size: 0.95rem; }
-  .page-break { page-break-after: always; }
-  .print-btn { margin: 24px auto 0; display:block; padding: 10px 20px; font-size: 1rem; cursor:pointer; }
-  @media print { .print-btn { display: none; } }
-</style></head>
-<body>
-  <div class="cover">
-    <h1>🥗 Weekly Meal Plan</h1>
-    <p>${store} &nbsp;·&nbsp; Generated ${genDateLabel}</p>
-    <p class="summary">Plan total: <b>${money(grandTotal)}</b>${grandSaving > 0 ? ` &nbsp;·&nbsp; Total savings: ${money(grandSaving)}` : ''}</p>
-    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
-  </div>
-  ${sections}
-</body></html>`;
-  }
-
-  function handleGeneratePlan() {
-    if (!state.storeFilter) return;
-    const store = state.storeFilter;
-    const dateStr = todayYYYYMMDD();
-    const filename = `MealPlan_${slugifyStore(store)}_${dateStr}.html`;
-    const key = planStorageKey(store, dateStr);
-    const statusEl = document.getElementById('planStatus');
-
-    let existing = null;
-    try { existing = localStorage.getItem(key); } catch (e) { /* storage unavailable */ }
-
-    if (existing) {
-      openHtmlInNewTab(existing);
-      statusEl.textContent = `Already generated today — opened ${filename}`;
-      return;
-    }
-
-    const html = buildWeeklyPlanDocument(store, filename);
-    try { localStorage.setItem(key, html); } catch (e) { /* storage unavailable, still allow download */ }
-    downloadHtmlFile(html, filename);
-    openHtmlInNewTab(html);
-    statusEl.textContent = `Generated ${filename}`;
   }
 
   async function bootstrap() {
