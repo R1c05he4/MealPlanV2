@@ -25,16 +25,13 @@
         <label class="chip chip--gf"><input type="checkbox" value="GF" /> Gluten-Free (GF)</label>
       </fieldset>
 
-      <button id="backToStoresBtn" class="btn btn--secondary btn--inline" type="button">
+      <div id="headerTotal" class="header-total" hidden>
+        Total: <strong id="headerTotalAmount">$0.00</strong>
+      </div>
+
+      <button id="backToStoresBtn" class="btn btn--primary btn--inline" type="button">
         🏬 Back To Stores
       </button>
-
-      <div class="generate-group">
-        <button id="generateBtn" class="btn btn--primary btn--inline" type="button" disabled>
-          📋 Generate Meal Plan
-        </button>
-        <span id="planStatus" class="plan-status"></span>
-      </div>
     </div>
   </header>
 
@@ -60,7 +57,7 @@
         <strong id="grandTotal">$0.00</strong>
       </div>
       <button id="pdfBtn" class="btn btn--primary" type="button" disabled>
-        📄 Generate Cooking Instructions (PDF)
+        📄 Show Recipes (PDF)
       </button>
     </div>
   </aside>
